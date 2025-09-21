@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生成绩排名查询系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#6366F1',
+                        neutral: '#64748B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+            }
+            .btn-hover {
+                @apply hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-graduation-cap text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">学生成绩排名查询系统</h1>
+            </div>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">首页</a>
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">帮助</a>
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">联系我们</a>
+            </div>
+            <button class="md:hidden text-gray-600">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 md:py-16">
+        <!-- 页面标题和介绍 -->
+        <div class="text-center max-w-3xl mx-auto mb-12">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800 mb-4">成绩排名查询</h2>
+            <p class="text-gray-600 text-lg">请输入您的姓名和学号，查询您的最新成绩排名信息</p>
+        </div>
+
+        <!-- 查询卡片 -->
+        <div class="max-w-md mx-auto bg-white rounded-2xl card-shadow p-6 md:p-8 mb-10 transform transition-all duration-500 hover:shadow-xl">
+            <form id="queryForm" class="space-y-6">
+                <!-- 姓名输入 -->
+                <div class="space-y-2">
+                    <label for="name" class="block text-sm font-medium text-gray-700">姓名</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                            <i class="fa fa-user"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            required
+                            class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 input-focus transition-all"
+                            placeholder="请输入您的姓名"
+                        >
+                    </div>
+                </div>
+
+                <!-- 学号输入 -->
+                <div class="space-y-2">
+                    <label for="studentId" class="block text-sm font-medium text-gray-700">学号</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                            <i class="fa fa-id-card"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            id="studentId" 
+                            required
+                            class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 input-focus transition-all"
+                            placeholder="请输入您的学号"
+                        >
+                    </div>
+                </div>
+
+                <!-- 提交按钮 -->
+                <button 
+                    type="submit" 
+                    class="w-full bg-primary text-white font-medium py-3 px-4 rounded-lg btn-hover flex items-center justify-center space-x-2"
+                >
+                    <span>查询成绩排名</span>
+                    <i class="fa fa-search"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- 结果展示区域 -->
+        <div id="resultContainer" class="max-w-2xl mx-auto hidden">
+            <!-- 加载状态 -->
+            <div id="loadingState" class="hidden text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                <p class="text-gray-600">正在查询您的成绩信息...</p>
+            </div>
+
+            <!-- 成功结果 -->
+            <div id="successResult" class="hidden bg-white rounded-2xl card-shadow p-6 md:p-8 transform transition-all duration-500">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-secondary mb-4">
+                        <i class="fa fa-check text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">查询成功</h3>
+                </div>
+
+                <div class="space-y-4 border-t border-gray-100 pt-4">
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">姓名：</span>
+                        <span id="resultName" class="font-medium text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">学号：</span>
+                        <span id="resultStudentId" class="font-medium text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">平均绩点：</span>
+                        <span id="resultGPA" class="font-medium text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">专业人数：</span>
+                        <span id="resultMajorTotal" class="font-medium text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">专业排名：</span>
+                        <span id="resultRank" class="font-medium text-primary text-lg"></span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">专业排名百分比：</span>
+                        <span id="resultPercentage" class="font-medium text-accent"></span>
+                    </div>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <button id="resetBtn" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        重新查询
+                    </button>
+                </div>
+            </div>
+
+            <!-- 错误结果 -->
+            <div id="errorResult" class="hidden bg-white rounded-2xl card-shadow p-6 md:p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-danger mb-4">
+                    <i class="fa fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">查询失败</h3>
+                <p id="errorMessage" class="text-gray-600 mb-6">未找到匹配的学生信息，请检查您输入的姓名和学号是否正确</p>
+                <button id="retryBtn" class="px-6 py-2 bg-primary text-white rounded-lg btn-hover">
+                    重新尝试
+                </button>
+            </div>
+        </div>
+
+        <!-- 信息提示卡片 -->
+        <div class="max-w-2xl mx-auto bg-blue-50 border border-blue-100 rounded-xl p-4 md:p-6 mt-8">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 mt-1">
+                    <i class="fa fa-info-circle text-primary text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-blue-800 mb-1">查询须知</h3>
+                    <p class="text-sm text-blue-700">
+                        1. 请确保输入的姓名和学号与学校登记信息一致<br>
+                        2. 系统数据每学期更新一次，若有疑问请联系辅导员<br>
+                        3. 本系统仅对学生本人开放查询，请勿泄露个人信息
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa fa-graduation-cap text-primary"></i>
+                        <span class="font-medium">学生成绩排名查询系统</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-2">© 2023 学校教务处 版权所有</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-question-circle"></i>
+                        <span class="ml-1">帮助中心</span>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-envelope"></i>
+                        <span class="ml-1">联系我们</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 更新后的学生数据
+        const studentData = [
+            { id: '24723449', name: '张璐瑶', gpa: 3.9, majorTotal: 208, rank: 1, percentage: '0.48%' },
+            { id: '24723448', name: '赵凯文', gpa: 3.8, majorTotal: 208, rank: 2, percentage: '0.96%' },
+            { id: '24723440', name: '吴泽宇', gpa: 3.7, majorTotal: 208, rank: 3, percentage: '1.44%' },
+            { id: '24723441', name: '张霄语', gpa: 3.8, majorTotal: 208, rank: 4, percentage: '1.92%' },
+            { id: '24723465', name: '李淼', gpa: 3.7, majorTotal: 208, rank: 5, percentage: '2.40%' },
+            { id: '24723478', name: '邵晓琛', gpa: 3.6, majorTotal: 208, rank: 6, percentage: '2.88%' },
+            { id: '24723457', name: '李菲菲', gpa: 3.7, majorTotal: 208, rank: 7, percentage: '3.37%' },
+            { id: '24723458', name: '潘璐雨', gpa: 3.6, majorTotal: 208, rank: 8, percentage: '3.85%' },
+            { id: '24723488', name: '崔艺凡', gpa: 3.6, majorTotal: 208, rank: 8, percentage: '3.85%' },
+            { id: '24723474', name: '陈欣怡', gpa: 3.7, majorTotal: 208, rank: 8, percentage: '3.85%' },
+            { id: '24723447', name: '杨晨', gpa: 3.6, majorTotal: 208, rank: 8, percentage: '3.85%' },
+            { id: '24723459', name: '顾霏', gpa: 3.7, majorTotal: 208, rank: 9, percentage: '4.33%' },
+            { id: '24723476', name: '黄雅文', gpa: 3.7, majorTotal: 208, rank: 10, percentage: '4.81%' },
+            { id: '24723450', name: '杨祉润', gpa: 3.6, majorTotal: 208, rank: 11, percentage: '5.29%' },
+            { id: '24723495', name: '陈洋', gpa: 3.6, majorTotal: 208, rank: 13, percentage: '6.25%' },
+            { id: '24723456', name: '马佳润', gpa: 3.6, majorTotal: 208, rank: 15, percentage: '7.21%' },
+            { id: '24723453', name: '钱俊成', gpa: 3.6, majorTotal: 208, rank: 16, percentage: '7.69%' },
+            { id: '24723503', name: '张垚楠', gpa: 3.6, majorTotal: 208, rank: 16, percentage: '7.69%' },
+            { id: '24723496', name: '李畅', gpa: 3.5, majorTotal: 208, rank: 18, percentage: '8.65%' },
+            { id: '24723482', name: '张力', gpa: 3.6, majorTotal: 208, rank: 22, percentage: '10.58%' },
+            { id: '24723451', name: '戴凌洁', gpa: 3.6, majorTotal: 208, rank: 22, percentage: '10.58%' },
+            { id: '24723492', name: '张文瑞', gpa: 3.5, majorTotal: 208, rank: 23, percentage: '11.06%' },
+            { id: '24723473', name: '应宇立', gpa: 3.6, majorTotal: 208, rank: 25, percentage: '12.02%' },
+            { id: '24723485', name: '顾振轩', gpa: 3.5, majorTotal: 208, rank: 27, percentage: '12.98%' },
+            { id: '24723463', name: '王邠皓', gpa: 3.5, majorTotal: 208, rank: 27, percentage: '12.98%' },
+            { id: '24723490', name: '邓诗益禾', gpa: 3.6, majorTotal: 208, rank: 28, percentage: '13.46%' },
+            { id: '24723442', name: '杨思远', gpa: 3.6, majorTotal: 208, rank: 28, percentage: '13.46%' },
+            { id: '24723460', name: '吴彤', gpa: 3.5, majorTotal: 208, rank: 29, percentage: '13.94%' },
+            { id: '24723489', name: '段楚柯', gpa: 3.6, majorTotal: 208, rank: 31, percentage: '14.90%' },
+            { id: '24723455', name: '徐心怡', gpa: 3.5, majorTotal: 208, rank: 33, percentage: '15.87%' },
+            { id: '24723470', name: '肖淑真', gpa: 3.5, majorTotal: 208, rank: 33, percentage: '15.87%' },
+            { id: '24723452', name: '陈乐怡', gpa: 3.5, majorTotal: 208, rank: 35, percentage: '16.83%' },
+            { id: '24723443', name: '李星蕾', gpa: 3.5, majorTotal: 208, rank: 35, percentage: '16.83%' },
+            { id: '24723479', name: '胡吉依', gpa: 3.5, majorTotal: 208, rank: 37, percentage: '17.79%' },
+            { id: '24723466', name: '陈心慧', gpa: 3.5, majorTotal: 208, rank: 39, percentage: '18.75%' },
+            { id: '24723468', name: '王逸伦', gpa: 3.5, majorTotal: 208, rank: 41, percentage: '19.71%' },
+            { id: '24723486', name: '肖洋', gpa: 3.5, majorTotal: 208, rank: 43, percentage: '20.67%' },
+            { id: '24723475', name: '厉泽宇', gpa: 3.5, majorTotal: 208, rank: 43, percentage: '20.67%' },
+            { id: '24723467', name: '李夏童', gpa: 3.6, majorTotal: 208, rank: 43, percentage: '20.67%' },
+            { id: '24723454', name: '刘馨澳', gpa: 3.5, majorTotal: 208, rank: 45, percentage: '21.63%' },
+            { id: '24723494', name: '张心仪', gpa: 3.5, majorTotal: 208, rank: 47, percentage: '22.60%' },
+            { id: '24723462', name: '刘晔璠', gpa: 3.5, majorTotal: 208, rank: 47, percentage: '22.60%' },
+            { id: '24723481', name: '孙曼理', gpa: 3.5, majorTotal: 208, rank: 49, percentage: '23.56%' },
+            { id: '24723477', name: '王奕力', gpa: 3.5, majorTotal: 208, rank: 51, percentage: '24.52%' },
+            { id: '24723472', name: '王佳婧', gpa: 3.4, majorTotal: 208, rank: 52, percentage: '25.00%' },
+            { id: '24723484', name: '常悦', gpa: 3.5, majorTotal: 208, rank: 53, percentage: '25.48%' },
+            { id: '24723491', name: '凡永佳', gpa: 3.5, majorTotal: 208, rank: 54, percentage: '25.96%' },
+            { id: '24723497', name: '杨雪', gpa: 3.5, majorTotal: 208, rank: 55, percentage: '26.44%' },
+            { id: '24723504', name: '游千谦', gpa: 3.5, majorTotal: 208, rank: 55, percentage: '26.44%' },
+            { id: '24723469', name: '茅馨丹', gpa: 3.4, majorTotal: 208, rank: 57, percentage: '27.40%' },
+            { id: '24723461', name: '朱晓彦', gpa: 3.4, majorTotal: 208, rank: 61, percentage: '29.33%' },
+            { id: '24723493', name: '李东轩', gpa: 3.5, majorTotal: 208, rank: 63, percentage: '30.29%' },
+            { id: '24723487', name: '张盛宁', gpa: 3.4, majorTotal: 208, rank: 63, percentage: '30.29%' },
+            { id: '24723483', name: '赵正旋', gpa: 3.4, majorTotal: 208, rank: 63, percentage: '30.29%' },
+            { id: '24723446', name: '夏雨', gpa: 3.4, majorTotal: 208, rank: 66, percentage: '31.73%' },
+            { id: '24723445', name: '张佳琪', gpa: 3.4, majorTotal: 208, rank: 66, percentage: '31.73%' },
+            { id: '24723500', name: '张姝晗', gpa: 3.4, majorTotal: 208, rank: 70, percentage: '33.65%' },
+            { id: '24723480', name: '周昊宇', gpa: 3.4, majorTotal: 208, rank: 74, percentage: '35.58%' },
+            { id: '24723498', name: '邰昱婷', gpa: 3.3, majorTotal: 208, rank: 77, percentage: '37.02%' },
+            { id: '24723499', name: '周芳冰', gpa: 3.3, majorTotal: 208, rank: 83, percentage: '39.90%' },
+            { id: '24723444', name: '叶书妍', gpa: 3.2, majorTotal: 208, rank: 89, percentage: '42.79%' },
+            { id: '24723471', name: '郭亚萌', gpa: 3.1, majorTotal: 208, rank: 93, percentage: '44.71%' },
+            { id: '24723464', name: '王梓璎', gpa: 3.2, majorTotal: 208, rank: 95, percentage: '45.67%' },
+            { id: '24723501', name: '包千禧', gpa: 3.2, majorTotal: 208, rank: 98, percentage: '47.12%' }
+        ];
+
+        // DOM元素
+        const queryForm = document.getElementById('queryForm');
+        const resultContainer = document.getElementById('resultContainer');
+        const loadingState = document.getElementById('loadingState');
+        const successResult = document.getElementById('successResult');
+        const errorResult = document.getElementById('errorResult');
+        const resetBtn = document.getElementById('resetBtn');
+        const retryBtn = document.getElementById('retryBtn');
+        const header = document.querySelector('header');
+
+        // 表单提交处理
+        queryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取输入值
+            const name = document.getElementById('name').value.trim();
+            const studentId = document.getElementById('studentId').value.trim();
+            
+            // 显示结果容器和加载状态
+            resultContainer.classList.remove('hidden');
+            loadingState.classList.remove('hidden');
+            successResult.classList.add('hidden');
+            errorResult.classList.add('hidden');
+            
+            // 模拟网络请求延迟
+            setTimeout(() => {
+                // 查找匹配的学生信息
+                const student = studentData.find(s => 
+                    s.name === name && s.id === studentId
+                );
+                
+                // 隐藏加载状态
+                loadingState.classList.add('hidden');
+                
+                if (student) {
+                    // 显示成功结果
+                    document.getElementById('resultName').textContent = student.name;
+                    document.getElementById('resultStudentId').textContent = student.id;
+                    document.getElementById('resultGPA').textContent = student.gpa;
+                    document.getElementById('resultMajorTotal').textContent = student.majorTotal;
+                    document.getElementById('resultRank').textContent = student.rank;
+                    document.getElementById('resultPercentage').textContent = student.percentage;
+                    successResult.classList.remove('hidden');
+                    
+                    // 添加排名动画效果
+                    const rankElement = document.getElementById('resultRank');
+                    rankElement.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        rankElement.classList.remove('animate-pulse');
+                    }, 1000);
+                } else {
+                    // 显示错误结果
+                    errorResult.classList.remove('hidden');
+                }
+                
+                // 滚动到结果区域
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 1500);
+        });
+
+        // 重新查询按钮事件
+        resetBtn.addEventListener('click', resetForm);
+        retryBtn.addEventListener('click', resetForm);
+
+        // 重置表单函数
+        function resetForm() {
+            queryForm.reset();
+            resultContainer.classList.add('hidden');
+            queryForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 滚动时导航栏效果
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 10) {
+                header.classList.add('py-2', 'shadow');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2', 'shadow');
+            }
+        });
+
+        // 输入框动画效果
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('scale-[1.02]');
+                input.parentElement.style.transition = 'transform 0.3s ease';
+            });
+            
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('scale-[1.02]');
+            });
+        });
+    </script>
+</body>
+</html>
+    
